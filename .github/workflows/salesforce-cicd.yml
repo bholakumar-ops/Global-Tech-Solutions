@@ -56,17 +56,23 @@ jobs:
 
       - name: Validate deploy (dry-run) on qa-org
         run: |
-          if [ -f manifest/destructiveChanges.xml ] && grep -q "<members>" manifest/destructiveChanges.xml; then
-            echo "Destructive changes detected — validating additions/updates + deletions together"
+          # if [ -f manifest/destructiveChanges.xml ] && grep -q "<members>" manifest/destructiveChanges.xml; then
+          #   echo "Destructive changes detected — validating additions/updates + deletions together"
+          #   sf project deploy start \
+          #     --manifest manifest/package.xml \
+          #     --post-destructive-changes manifest/destructiveChanges.xml \
+          #     --dry-run --test-level RunLocalTests --target-org qa-org \
+          #     --ignore-conflicts --ignore-warnings --verbose
+          # else
+          #   echo "No destructive changes — validating manifest only"
+          #   sf project deploy start \
+          #     --manifest manifest/package.xml \
+          #     --dry-run --test-level RunLocalTests --target-org qa-org \
+          #     --ignore-conflicts --ignore-warnings --verbose
+          # fi
+          
             sf project deploy start \
-              --manifest manifest/package.xml \
-              --post-destructive-changes manifest/destructiveChanges.xml \
-              --dry-run --test-level RunLocalTests --target-org qa-org \
-              --ignore-conflicts --ignore-warnings --verbose
-          else
-            echo "No destructive changes — validating manifest only"
-            sf project deploy start \
-              --manifest manifest/package.xml \
-              --dry-run --test-level RunLocalTests --target-org qa-org \
-              --ignore-conflicts --ignore-warnings --verbose
-          fi
+                --manifest manifest/package.xml \
+                --post-destructive-changes manifest/destructiveChanges.xml \
+                --dry-run --test-level RunLocalTests --target-org qa-org \
+                --ignore-conflicts --ignore-warnings --verbose
