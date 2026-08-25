@@ -116,14 +116,13 @@ validationBeforeQA:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org qa-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "QA Validation Successfully 🚀"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Validation Successfully 🚀"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"QA Validation Successful 🛫 !!\nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
         else
-          echo "QA Validation Failed ❌"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Validation Failed ❌"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"QA Validation Failed 🚨 \nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
-          exit 1
         fi
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
@@ -142,14 +141,13 @@ Deploy To Qa:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org qa-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "QA Org Deploy Successfully 🚀"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Org Deploy Successfully 🚀"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"QA Deployment Successful 🛫 !!\nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
         else
-          echo "QA Org Deploy Failed ❌"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Org Deploy Failed ❌"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"QA Deployment Failed 🚨 \nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
-          exit 1
         fi
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
@@ -182,14 +180,13 @@ validationBeforeUAT:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org uat-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "UAT Validation Successfully 🚀"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"UAT Validation Successfully 🚀"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"Uat Validation Successful 🛫 !!\nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
         else
-          echo "UAT Validation Failed ❌"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"UAT Validation Failed ❌"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"Uat Validation Failed 🚨 \nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
-          exit 1
         fi
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "uat"'
@@ -208,14 +205,13 @@ Deploy To UAT:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org uat-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "UAT Org Deploy Successfully 🚀"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"UAT Org Deploy Successfully 🚀"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"UAT Deployment Successful 🛫 !!\nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
         else
-          echo "UAT Org Deploy Failed ❌"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Uat Org Deploy Failed ❌"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"UAT Deployment Failed 🚨 \nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
-          exit 1
         fi
   rules:
     - if: '$CI_COMMIT_BRANCH == "uat"'
@@ -248,14 +244,13 @@ validationBeforePROD:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org prod-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "Production Validation Successfully 🚀"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Production Validation Successfully 🚀"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"Production Validation Successful 🛫 !!\nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
         else
-          echo "Production Validation Failed ❌"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Production Validation Failed ❌"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"Production Validation Failed 🚨 \nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
-          exit 1
         fi
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
@@ -275,14 +270,13 @@ Deploy To PROD:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org prod-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "Productoin org Deployment Successfully 🚀"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Productoin org Deployment Successfully 🚀"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"Production Deployment Successful 🛫 !!\nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
         else
-          echo "Productoin org Deployment Failed ❌"
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Productoin org Deployment Failed ❌"}' 
+         curl -X POST -H "Content-type: application/json" \
+          --data "{\"text\": \"Production Deployment Failed 🚨 \nTriggered by $CI_COMMIT_AUTHOR\"}" \
           ${SLACK_WEBHOOK}
-          exit 1
         fi
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
