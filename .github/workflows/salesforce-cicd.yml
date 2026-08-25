@@ -81,7 +81,6 @@ jobs:
     environment: uat
     steps:
       - uses: actions/checkout@v4
-
       - name: Authenticate to uat-org
         run: |
           echo "${{ secrets.AUTH_KEY }}" > "$RUNNER_TEMP/server.key"
@@ -121,7 +120,6 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-
       - name: Authenticate to prod-org
         run: |
           echo "${{ secrets.AUTH_KEY }}" > "$RUNNER_TEMP/server.key"
@@ -136,24 +134,24 @@ jobs:
           rm -f "$RUNNER_TEMP/server.key"
 
       - name: Validate deploy (dry-run) on prod-org
-       run: |
-          if [ -f manifest/destructiveChanges.xml ] && grep -q "<members>" manifest/destructiveChanges.xml; then
-            echo "Destructive changes detected — deploying additions/updates + deletions together"
-            sf project deploy start \
-              --manifest manifest/package.xml \
-              --post-destructive-changes manifest/destructiveChanges.xml \
-              --dry-run \
-              --test-level RunLocalTests --target-org prod-org \
-              --ignore-conflicts --ignore-warnings --verbose
-          else
-            echo "No destructive changes — deploying manifest only"
-            sf project deploy start \
-              --manifest manifest/package.xml \
-              --dry-run \
-              --test-level RunLocalTests --target-org prod-org \
-              --ignore-conflicts --ignore-warnings --verbose
-          fi
-  deploy To QA:
+        run: |
+           if [ -f manifest/destructiveChanges.xml ] && grep -q "<members>" manifest/destructiveChanges.xml; then
+             echo "Destructive changes detected — deploying additions/updates + deletions together"
+             sf project deploy start \
+               --manifest manifest/package.xml \
+               --post-destructive-changes manifest/destructiveChanges.xml \
+               --dry-run \
+               --test-level RunLocalTests --target-org prod-org \
+               --ignore-conflicts --ignore-warnings --verbose
+           else
+             echo "No destructive changes — deploying manifest only"
+             sf project deploy start \
+               --manifest manifest/package.xml \
+               --dry-run \
+               --test-level RunLocalTests --target-org prod-org \
+               --ignore-conflicts --ignore-warnings --verbose
+           fi
+  deployToQA:
     name: 'deploy / QA ORG'
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
@@ -161,7 +159,6 @@ jobs:
     environment: qa
     steps:
       - uses: actions/checkout@v4
-
       - name: Authenticate to qa-org
         run: |
           echo "${{ secrets.AUTH_KEY }}" > "$RUNNER_TEMP/server.key"
@@ -191,7 +188,7 @@ jobs:
               --test-level RunLocalTests --target-org qa-org \
               --ignore-conflicts --ignore-warnings --verbose
           fi
-  deploy To UAT:
+  deployToUAT:
     name: 'deploy / UAT ORG'
     if: github.event_name == 'push' && github.ref == 'refs/heads/uat'
     runs-on: ubuntu-latest
@@ -199,7 +196,6 @@ jobs:
     environment: uat
     steps:
       - uses: actions/checkout@v4
-
       - name: Authenticate to uat-org
         run: |
           echo "${{ secrets.AUTH_KEY }}" > "$RUNNER_TEMP/server.key"
@@ -229,7 +225,7 @@ jobs:
               --test-level RunLocalTests --target-org uat-org \
               --ignore-conflicts --ignore-warnings --verbose
           fi
-  deploy To PROD:
+  deployToPROD:
     name: 'deploy / Production ORG'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
