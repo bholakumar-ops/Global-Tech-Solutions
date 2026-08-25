@@ -4,7 +4,7 @@
 @IsTest
 private class StringValidatorTest {
     /**
-     * @description Verifies validation of non-blank and blank strings. 
+     * @description Verifies validation of non-blank and blank strings.   
      */
     @IsTest
     static void testIsValid() {
