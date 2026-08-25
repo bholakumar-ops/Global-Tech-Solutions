@@ -1,0 +1,265 @@
+# 1 step define the stages of the pipeline
+stages:
+  - code-analysis
+  - delta
+  - validation
+  - deploy
+
+
+# variable
+variables:
+  PMD_VERSION: "7.0.0"
+  GIT_DEPTH: 0
+
+# first job for pmd checks
+PMD CHECKS:
+  image: ubuntu
+  stage: code-analysis
+  before_script:
+    - apt-get update && apt-get install -y wget default-jdk unzip
+    - wget https://github.com/pmd/pmd/releases/download/pmd_releases/$PMD_VERSION-rc4/pmd-dist-$PMD_VERSION-rc4-bin.zip
+    - unzip pmd-dist-$PMD_VERSION-rc4-bin.zip -d ~
+    - chmod a+x ~/pmd-bin-7.0.0-rc4/shell/pmd-completion.sh
+  script:
+    - echo "running code analysis ⌛"
+    - bash deploymentFolder/codeAnalysis.sh
+    - echo "code analysis completed!"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# now 2 step is authorization hidden jobs
+.auth_qa:
+  before_script:
+    - echo "$AUTH_KEY" > /tmp/server.key
+    - wc -l /tmp/server.key
+    - sf org login jwt --client-id ${QA_CONSUMER_KEY} --jwt-key-file /tmp/server.key --username ${QA_USERNAME} --instance-url https://login.salesforce.com --alias qa-org
+    - |
+        if [ $? -eq 0 ]; then
+          echo "QA Authorization successful"
+        else
+          echo "QA Authorization Failed"
+          exit 1
+        fi
+
+.auth_uat:
+  before_script:
+    - echo "$AUTH_KEY" > /tmp/server.key
+    - wc -l /tmp/server.key
+    - sf org login jwt --client-id ${UAT_CONSUMER_KEY} --jwt-key-file /tmp/server.key --username ${UAT_USERNAME} --instance-url https://login.salesforce.com --alias uat-org
+    - |
+        if [ $? -eq 0 ]; then
+          echo "UAT Authorization successful"
+        else
+          echo "UAT Authorization Failed"
+          exit 1
+        fi
+
+.auth_prod:
+  before_script:
+    - echo "$AUTH_KEY" > /tmp/server.key
+    - wc -l /tmp/server.key
+    - sf org login jwt --client-id ${PROD_CONSUMER_KEY} --jwt-key-file /tmp/server.key --username ${PROD_USERNAME} --instance-url https://login.salesforce.com --alias prod-org
+    - |
+        if [ $? -eq 0 ]; then
+          echo "Production Authorization successful"
+        else
+          echo "Production Authorization Failed"
+          exit 1
+        fi
+
+.generate_delta_script: &generate_delta_script
+  - echo "Y" | sf plugins install sfdx-git-delta
+  - |
+      if [ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]; then
+        FROM_REF="origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      else
+        FROM_REF="$CI_COMMIT_BEFORE_SHA"
+      fi
+      if [ -z "$FROM_REF" ] || [ "$FROM_REF" == "0000000000000000000000000000000000000000" ]; then
+        echo "No valid previous commit found, falling back to HEAD~1"
+        FROM_REF="HEAD~1"
+      fi
+      echo "Generating delta package from $FROM_REF to HEAD"
+      mkdir -p changed-sources
+      sf sgd source delta --to "HEAD" --from "$FROM_REF" --output-dir changed-sources/ --generate-delta
+      echo "----- package.xml (changed metadata) -----"
+      cat changed-sources/package/package.xml 2>/dev/null || echo "No metadata changes detected"
+      echo "----- destructiveChanges.xml (deleted metadata) -----"
+      cat changed-sources/destructiveChanges/destructiveChanges.xml 2>/dev/null || echo "No destructive changes detected"
+
+# now step 3 here we define all jobs
+#  QA Validation and deployment
+generate-delta-qa:
+  image: salesforce/cli:latest-slim
+  stage: delta
+  script: *generate_delta_script
+  artifacts:
+    paths:
+      - changed-sources/
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "QA"'
+    - if: '$CI_COMMIT_BRANCH == "QA"'
+
+validationBeforeQA:
+  image: salesforce/cli:nightly-slim
+  stage: validation
+  extends: .auth_qa
+  script:
+    - echo "validation in qa org ......"
+    - |
+        if ! grep -q "<types>" changed-sources/package/package.xml 2>/dev/null; then
+          echo "No metadata changes detected in package.xml — nothing to deploy. Skipping."
+          exit 0
+        fi
+
+    - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org qa-org --ignore-warnings --verbose
+    - |
+        if [ $? -eq 0 ]; then
+          echo "QA Validation Successful ✅"
+        else
+          echo "QA Validation Failed"
+          exit 1
+        fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "QA"'
+
+Deploy To Qa:
+  image: salesforce/cli:nightly-slim
+  stage: deploy
+  extends: .auth_qa
+  script:
+    - echo "deploying to qa org ......"
+    - |
+        if ! grep -q "<types>" changed-sources/package/package.xml 2>/dev/null; then
+          echo "No metadata changes detected in package.xml — nothing to deploy. Skipping."
+          exit 0
+        fi
+    - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org qa-org --ignore-warnings --verbose
+    - |
+        if [ $? -eq 0 ]; then
+          echo "QA Deployment Successful ✅"
+        else
+          echo "QA Deployment Failed"
+          exit 1
+        fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "QA"'
+
+
+# UAT Validation and deployment
+generate-delta-uat:
+  image: salesforce/cli:latest-slim
+  stage: delta
+  script: *generate_delta_script
+  artifacts:
+    paths:
+      - changed-sources/
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "UAT"'
+    - if: '$CI_COMMIT_BRANCH == "UAT"'
+
+validationBeforeUAT:
+  image: salesforce/cli:nightly-slim
+  stage: validation
+  extends: .auth_uat
+  script:
+    - echo "validation in uat org ......"
+    - |
+        if ! grep -q "<types>" changed-sources/package/package.xml 2>/dev/null; then
+          echo "No metadata changes detected in package.xml — nothing to deploy. Skipping."
+          exit 0
+        fi
+    - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org uat-org --ignore-warnings --verbose
+    - |
+        if [ $? -eq 0 ]; then
+          echo "UAT Validation Successful ✅"
+        else
+          echo "UAT Validation Failed"
+          exit 1
+        fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "UAT"'
+
+Deploy To UAT:
+  image: salesforce/cli:nightly-slim
+  stage: deploy
+  extends: .auth_uat
+  script:
+    - echo "deploying to uat org ......"
+    - |
+        if ! grep -q "<types>" changed-sources/package/package.xml 2>/dev/null; then
+          echo "No metadata changes detected in package.xml — nothing to deploy. Skipping."
+          exit 0
+        fi
+    - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org uat-org --ignore-warnings --verbose
+    - |
+        if [ $? -eq 0 ]; then
+          echo "UAT Deployment Successful ✅"
+        else
+          echo "UAT Deployment Failed"
+          exit 1
+        fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "UAT"'
+
+
+# Production Validation and deployment
+generate-delta-prod:
+  image: salesforce/cli:latest-slim
+  stage: delta
+  script: *generate_delta_script
+  artifacts:
+    paths:
+      - changed-sources/
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+validationBeforePROD:
+  image: salesforce/cli:nightly-slim
+  stage: validation
+  extends: .auth_prod
+  script:
+    - echo "validation in production org ......"
+    - |
+        if ! grep -q "<types>" changed-sources/package/package.xml 2>/dev/null; then
+          echo "No metadata changes detected in package.xml — nothing to deploy. Skipping."
+          exit 0
+        fi
+    - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org prod-org --ignore-warnings --verbose
+    - |
+        if [ $? -eq 0 ]; then
+          echo "Production Validation Successful ✅"
+        else
+          echo "Production Validation Failed"
+          exit 1
+        fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+
+Deploy To PROD:
+  image: salesforce/cli:nightly-slim
+  stage: deploy
+  extends: .auth_prod
+  script:
+    - echo "deploying to production org ......"
+    - |
+        if ! grep -q "<types>" changed-sources/package/package.xml 2>/dev/null; then
+          echo "No metadata changes detected in package.xml — nothing to deploy. Skipping."
+          exit 0
+        fi
+
+    - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org prod-org --ignore-warnings --verbose
+    - |
+        if [ $? -eq 0 ]; then
+          echo "Production Deployment Successful ✅"
+        else
+          echo "Production Deployment Failed"
+          exit 1
+        fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  when: manual
