@@ -1,5 +1,5 @@
 /**
- * @description Provides validation methods for text values.
+ * @description Provides validation methods for text values. 
  */
 public with sharing class StringValidator {
     /**
