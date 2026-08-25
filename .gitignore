@@ -4,6 +4,10 @@
 .localdevserver/
 deploy-options.json
 
+# jwt key
+exam-jwt/
+README.md
+
 # LWC VSCode autocomplete
 **/lwc/jsconfig.json
 
