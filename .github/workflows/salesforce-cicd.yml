@@ -2,9 +2,9 @@ name: Salesforce CI/CD
 
 on:
   pull_request:
-    branches: [QA, UAT, master]
+    branches: [dev, uat, main]
   push:
-    branches: [QA, UAT, master]
+    branches: [dev, uat, main]
 
 jobs:
   code-analysis:
