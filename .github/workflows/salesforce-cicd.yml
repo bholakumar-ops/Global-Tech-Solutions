@@ -1,0 +1,72 @@
+name: Salesforce CI/CD
+
+on:
+  pull_request:
+    branches: [QA, UAT, master]
+  push:
+    branches: [QA, UAT, master]
+
+jobs:
+  code-analysis:
+    name: "code-analysis / PMD checks"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest
+      options: --user 0:0
+    env:
+      PMD_VERSION: "7.0.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PMD
+        run: |
+          echo "pmd installing ............"
+          apt update && apt install -y wget unzip default-jdk
+          wget https://github.com/pmd/pmd/releases/download/pmd_releases/${PMD_VERSION}-rc4/pmd-dist-${PMD_VERSION}-rc4-bin.zip
+          unzip pmd-dist-${PMD_VERSION}-rc4-bin.zip -d "$HOME"
+          chmod a+x "$HOME"/pmd-bin-${PMD_VERSION}-rc4/shell/pmd-completion.sh
+
+      - name: Run PMD code analysis
+        run: |
+          echo "running code analysis"
+          bash deploymentFolder/codeAnalysis.sh
+          echo "code analysis completed !!"
+  validate-Integration:
+    name: "code-validation / Integration sandbox"
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    runs-on: ubuntu-latest
+    container: salesforce/cli:latest-slim
+    environment: qa
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to qa-org
+        run: |
+          echo "${{ secrets.AUTH_KEY }}" > "$RUNNER_TEMP/server.key"
+          wc -l "$RUNNER_TEMP/server.key"
+          sf org login jwt \
+            --client-id "${{ secrets.QA_CONSUMER_KEY }}" \
+            --jwt-key-file "$RUNNER_TEMP/server.key" \
+            --username "${{ secrets.QA_USERNAME }}" \
+            --instance-url "https://test.salesforce.com" \
+            --alias "qa-org" \
+            --set-default
+          rm -f "$RUNNER_TEMP/server.key"
+
+      - name: Validate deploy (dry-run) on qa-org
+        run: |
+          if [ -f manifest/destructiveChanges.xml ] && grep -q "<members>" manifest/destructiveChanges.xml; then
+            echo "Destructive changes detected — validating additions/updates + deletions together"
+            sf project deploy start \
+              --manifest manifest/package.xml \
+              --post-destructive-changes manifest/destructiveChanges.xml \
+              --dry-run --test-level RunLocalTests --target-org qa-org \
+              --ignore-conflicts --ignore-warnings --verbose
+          else
+            echo "No destructive changes — validating manifest only"
+            sf project deploy start \
+              --manifest manifest/package.xml \
+              --dry-run --test-level RunLocalTests --target-org qa-org \
+              --ignore-conflicts --ignore-warnings --verbose
+          fi
