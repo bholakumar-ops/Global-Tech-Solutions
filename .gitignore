@@ -8,6 +8,8 @@ deploy-options.json
 exam-jwt/
 README.md
 
+.github
+
 # LWC VSCode autocomplete
 **/lwc/jsconfig.json
 
