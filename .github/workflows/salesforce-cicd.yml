@@ -49,7 +49,7 @@ jobs:
             --client-id "${{ secrets.QA_CONSUMER_KEY }}" \
             --jwt-key-file "$RUNNER_TEMP/server.key" \
             --username "${{ secrets.QA_USERNAME }}" \
-            --instance-url "https://test.salesforce.com" \
+            --instance-url "https://login.salesforce.com" \
             --alias "qa-org" \
             --set-default
           rm -f "$RUNNER_TEMP/server.key"
