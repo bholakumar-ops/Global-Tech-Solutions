@@ -116,9 +116,13 @@ validationBeforeQA:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org qa-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "QA Validation Successful ✅"
+          echo "QA Validation Successfully 🚀"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Validation Successfully 🚀"}' 
+          ${SLACK_WEBHOOK}
         else
-          echo "QA Validation Failed"
+          echo "QA Validation Failed ❌"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Validation Failed ❌"}' 
+          ${SLACK_WEBHOOK}
           exit 1
         fi
   rules:
@@ -138,9 +142,13 @@ Deploy To Qa:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org qa-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "QA Deployment Successful ✅"
+          echo "QA Org Deploy Successfully 🚀"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Org Deploy Successfully 🚀"}' 
+          ${SLACK_WEBHOOK}
         else
-          echo "QA Deployment Failed"
+          echo "QA Org Deploy Failed ❌"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"QA Org Deploy Failed ❌"}' 
+          ${SLACK_WEBHOOK}
           exit 1
         fi
   rules:
@@ -174,9 +182,13 @@ validationBeforeUAT:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org uat-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "UAT Validation Successful ✅"
+          echo "UAT Validation Successfully 🚀"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"UAT Validation Successfully 🚀"}' 
+          ${SLACK_WEBHOOK}
         else
-          echo "UAT Validation Failed"
+          echo "UAT Validation Failed ❌"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"UAT Validation Failed ❌"}' 
+          ${SLACK_WEBHOOK}
           exit 1
         fi
   rules:
@@ -196,9 +208,13 @@ Deploy To UAT:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org uat-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "UAT Deployment Successful ✅"
+          echo "UAT Org Deploy Successfully 🚀"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"UAT Org Deploy Successfully 🚀"}' 
+          ${SLACK_WEBHOOK}
         else
-          echo "UAT Deployment Failed"
+          echo "UAT Org Deploy Failed ❌"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Uat Org Deploy Failed ❌"}' 
+          ${SLACK_WEBHOOK}
           exit 1
         fi
   rules:
@@ -232,9 +248,13 @@ validationBeforePROD:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --dry-run --test-level RunLocalTests --target-org prod-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "Production Validation Successful ✅"
+          echo "Production Validation Successfully 🚀"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Production Validation Successfully 🚀"}' 
+          ${SLACK_WEBHOOK}
         else
-          echo "Production Validation Failed"
+          echo "Production Validation Failed ❌"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Production Validation Failed ❌"}' 
+          ${SLACK_WEBHOOK}
           exit 1
         fi
   rules:
@@ -255,9 +275,13 @@ Deploy To PROD:
     - sf project deploy start -x changed-sources/package/package.xml --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml --test-level RunLocalTests --target-org prod-org --ignore-warnings --verbose
     - |
         if [ $? -eq 0 ]; then
-          echo "Production Deployment Successful ✅"
+          echo "Productoin org Deployment Successfully 🚀"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Productoin org Deployment Successfully 🚀"}' 
+          ${SLACK_WEBHOOK}
         else
-          echo "Production Deployment Failed"
+          echo "Productoin org Deployment Failed ❌"
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Productoin org Deployment Failed ❌"}' 
+          ${SLACK_WEBHOOK}
           exit 1
         fi
   rules:
