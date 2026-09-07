@@ -2,26 +2,37 @@ name: Mirror to GitLab
 
 on:
   push:
-    branches:
-      - '**' # Triggers on all branch pushes
-    tags:
-      - '*'  # Triggers on all tag pushes
+    branches: ['**']    # every branch push
+    tags: ['*']         # every tag push
+  delete:                # catches branch/tag deletions on GitHub
+  schedule:
+    - cron: '17 * * * *' # hourly safety net (remove this block if you don't want it)
+  workflow_dispatch:      # lets you trigger it manually from the Actions tab
+
+concurrency:
+  group: gitlab-mirror
+  cancel-in-progress: false   # never cancel a mirror mid-push; let it finish
+
+permissions:
+  contents: read
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 
-
-      - name: Push to GitLab
+      - name: Mirror clone and push to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/bh-sfdev/global-tech-solutions.git
-          
-          # This guarantees every branch on GitHub is pushed to GitLab, not just the active one
-          git push gitlab "refs/remotes/origin/*:refs/heads/*" --force
-          
-          # Pushes all tags
-          git push gitlab --tags --force
+          set -euo pipefail
+
+          # Full mirror clone: every branch, every tag, full history — not just
+          # the branch that triggered this run.
+          git clone --mirror "https://github.com/${GITHUB_REPOSITORY}.git" repo-mirror
+          cd repo-mirror
+
+          git remote add gitlab "https://oauth2:${GITLAB_TOKEN}@gitlab.com/bh-sfdev/global-tech-solutions.git"
+
+          # --mirror pushes everything AND deletes any ref on GitLab that no
+          # longer exists on GitHub (handles force-pushes and deletions).
+          git push --mirror gitlab
