@@ -5,8 +5,6 @@ on:
     branches: ['**']    # every branch push
     tags: ['*']         # every tag push
   delete:                # catches branch/tag deletions on GitHub
-  schedule:
-    - cron: '17 * * * *' # hourly safety net (remove this block if you don't want it)
   workflow_dispatch:      # lets you trigger it manually from the Actions tab
 
 concurrency:
